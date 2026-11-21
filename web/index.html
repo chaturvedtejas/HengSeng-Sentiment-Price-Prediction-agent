@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentiment Agent · HKEX & KRX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6f8;--bg2:#eef0f3;--panel:#ffffff;--panel2:#f8f9fb;--line:#e3e6ec;--line2:#d5d9e1;
+  --tx:#0e1320;--tx2:#3a4254;--mut:#6b7385;--faint:#9aa1b1;
+  --up:#0f9f6e;--dn:#e5484d;--warn:#c27c0e;--acc:#4f5fe8;--acc2:#7c5cff;
+  --upbg:rgba(15,159,110,.10);--dnbg:rgba(229,72,77,.10);--warnbg:rgba(194,124,14,.12);--accbg:rgba(79,95,232,.10);
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);--r:14px;--side:264px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+:root[data-theme=dark]{
+  --bg:#080b11;--bg2:#0c1018;--panel:#10151f;--panel2:#141a26;--line:#1d2432;--line2:#283043;
+  --tx:#e8ebf2;--tx2:#c3c9d6;--mut:#8b93a7;--faint:#5c6478;
+  --up:#2fd39a;--dn:#ff5c6c;--warn:#f5b84b;--acc:#7c8cff;--acc2:#a78bfa;
+  --upbg:rgba(47,211,154,.11);--dnbg:rgba(255,92,108,.11);--warnbg:rgba(245,184,75,.12);--accbg:rgba(124,140,255,.12);
+  --shadow:0 0 0 1px rgba(255,255,255,.02),0 8px 24px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 Inter,-apple-system,"Segoe UI",Roboto,"Noto Sans KR","Noto Sans TC",sans-serif;-webkit-font-smoothing:antialiased}
+:root[data-theme=dark] body{background:radial-gradient(1200px 600px at 70% -10%,rgba(124,140,255,.08),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(47,211,154,.05),transparent 60%),var(--bg)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}a{color:inherit}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+.up{color:var(--up)}.dn{color:var(--dn)}.mut{color:var(--mut)}.faint{color:var(--faint)}.warn{color:var(--warn)}
+.app{display:flex;height:100%}
+/* ---------- sidebar ---------- */
+aside{width:var(--side);flex:none;display:flex;flex-direction:column;background:var(--bg2);border-right:1px solid var(--line);transition:margin .25s ease;z-index:30}
+.app.collapsed aside{margin-left:calc(-1 * var(--side))}
+.brand{display:flex;align-items:center;gap:10px;padding:16px 14px 10px}
+.logo{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;box-shadow:0 4px 14px rgba(124,140,255,.35)}
+.brand b{font-weight:700;font-size:15px;letter-spacing:-.2px;display:block}.brand small{color:var(--mut);font-size:11px}
+.ib{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--mut)}.ib:hover{background:var(--panel2);color:var(--tx)}
+.sec{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--faint);padding:14px 16px 6px;font-weight:600}
+.nav{display:flex;align-items:center;gap:10px;margin:1px 8px;padding:8px 10px;border-radius:10px;cursor:pointer;color:var(--tx2);text-decoration:none;transition:background .15s}
+.nav:hover{background:var(--panel2)}.nav.on{background:var(--panel);color:var(--tx);box-shadow:var(--shadow)}
+.nav .m{margin-left:auto;font-size:12px}.nav .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.watch{flex:1;overflow:auto;min-height:0;padding-bottom:8px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}.dot.LONG,.dot.up{background:var(--up)}.dot.SHORT,.dot.dn{background:var(--dn)}.dot.WATCH,.dot.warn{background:var(--warn)}
+.sfoot{border-top:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:8px}
+.live{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut)}.live i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.live i.on{background:var(--up);box-shadow:0 0 0 3px var(--upbg)}.live i.busy{background:var(--warn);animation:pulse 1s infinite}.live i.err{background:var(--dn)}
+@keyframes pulse{50%{opacity:.35}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);font-weight:500;font-size:13px;transition:all .15s}
+.btn:hover{border-color:var(--acc);color:var(--acc)}.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}.btn.pri:hover{filter:brightness(1.08);color:#fff}
+.btn[disabled]{opacity:.55;pointer-events:none}.btn.sm{padding:5px 10px;font-size:12px}
+.row{display:flex;align-items:center;gap:8px}.sp{flex:1}
+/* ---------- main ---------- */
+main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:10px;padding:10px 20px;min-height:58px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(10px)}
+.crumb{font-weight:500;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.crumb b{color:var(--tx);font-weight:600}.crumb a{text-decoration:none;cursor:pointer}.crumb a:hover{color:var(--tx)}
+.badge{font-size:11px;font-weight:600;letter-spacing:.4px;padding:4px 10px;border-radius:99px;border:1px solid var(--line2);color:var(--mut);white-space:nowrap}
+.badge.demo{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent);background:var(--warnbg)}.badge.live{color:var(--up);border-color:color-mix(in srgb,var(--up) 45%,transparent);background:var(--upbg)}
+.fresh{font-size:12px;color:var(--mut);white-space:nowrap}
+.scroll{flex:1;overflow:auto;scroll-behavior:smooth}.wrap{max-width:1320px;margin:0 auto;padding:22px 28px 90px}
+.view{animation:in .28s ease}@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* ---------- building blocks ---------- */
+h1{font-size:28px;font-weight:700;letter-spacing:-.6px;margin:0}
+h2{font-size:17px;font-weight:650;letter-spacing:-.2px;margin:0}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--acc)}
+.sub{color:var(--mut);margin-top:4px}
+.shead{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:34px 0 14px}
+.shead p{margin:4px 0 0;color:var(--mut);font-size:13px;max-width:720px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);min-width:0}
+.card h3{font-size:12px;font-weight:600;color:var(--mut);margin:0 0 12px;text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.g{display:grid;gap:14px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g6{grid-template-columns:repeat(6,minmax(0,1fr))}.g-21{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}.g-12{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+.kpi .l{font-size:12px;color:var(--mut);display:flex;align-items:center;gap:6px}.kpi .v{font-size:26px;font-weight:650;letter-spacing:-.6px;margin-top:6px;font-family:var(--mono)}
+.kpi .s{font-size:12px;color:var(--faint);margin-top:2px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:550;background:var(--panel2);color:var(--mut);border:1px solid var(--line);white-space:nowrap}
+.chip.up{background:var(--upbg);color:var(--up);border-color:transparent}.chip.dn{background:var(--dnbg);color:var(--dn);border-color:transparent}.chip.warn{background:var(--warnbg);color:var(--warn);border-color:transparent}.chip.acc{background:var(--accbg);color:var(--acc);border-color:transparent}
+.act{display:inline-flex;align-items:center;justify-content:center;min-width:62px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:.6px;background:var(--panel2);color:var(--mut);border:1px solid var(--line)}
+.act.LONG{background:var(--upbg);color:var(--up);border-color:color-mix(in srgb,var(--up) 35%,transparent)}.act.SHORT{background:var(--dnbg);color:var(--dn);border-color:color-mix(in srgb,var(--dn) 35%,transparent)}.act.WATCH{background:var(--warnbg);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 35%,transparent)}
+.pills{display:inline-flex;gap:2px;background:var(--panel2);border:1px solid var(--line);padding:3px;border-radius:11px;max-width:100%;overflow-x:auto}
+.pills button{padding:6px 12px;border-radius:8px;color:var(--mut);font-size:13px;font-weight:500;white-space:nowrap}.pills button.on{background:var(--panel);color:var(--tx);box-shadow:var(--shadow)}
+.bar2{position:relative;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line)}.bar2 i{position:absolute;top:-1px;height:6px;border-radius:3px}.bar2:after{content:"";position:absolute;left:50%;top:-4px;width:1px;height:12px;background:var(--line2)}
+.mbar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden}.mbar i{display:block;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.split{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--panel2);margin-top:12px}.split i{display:block;height:8px}
+dl.kv{margin:0;display:grid;grid-template-columns:1fr auto;gap:8px 16px;font-size:13px}dl.kv dt{color:var(--mut)}dl.kv dd{margin:0;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.note{font-size:12px;color:var(--warn);margin-top:10px}.fn{color:var(--faint);font-size:12px;line-height:1.7;margin-top:40px;border-top:1px solid var(--line);padding-top:18px}
+.empty{color:var(--mut);padding:8px 0}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}.tbl th{font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.6px;text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:10px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}.tbl tr:last-child td{border-bottom:0}
+.tbl th:first-child,.tbl td:first-child{text-align:left}.tbl td.t{font-family:inherit}.xs{overflow-x:auto}
+/* ranking */
+.rank{display:grid;grid-template-columns:30px minmax(170px,1.5fr) 96px 110px minmax(110px,1fr) minmax(130px,1.1fr) 120px 96px;gap:14px;align-items:center;padding:12px 14px}
+.rh{font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.6px;padding-top:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.ri{border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s;border-radius:10px}.ri:last-child{border-bottom:0}.ri:hover{background:var(--panel2)}
+.ri .nm b{font-weight:600;display:block}.ri .nm small{color:var(--mut)}
+.ri small.d{display:block;font-size:12px}
+/* decision */
+.dec .big{font-size:38px;font-weight:750;letter-spacing:-1px;line-height:1}
+.meter{height:8px;border-radius:4px;background:var(--panel2);overflow:hidden;border:1px solid var(--line)}.meter i{display:block;height:100%;border-radius:4px}
+.vote{display:grid;grid-template-columns:96px 1fr 52px;gap:10px;align-items:center;font-size:12px;color:var(--mut);margin:9px 0}
+.why{margin:14px 0 0;padding:0;list-style:none;font-size:13px;color:var(--tx2)}.why li{padding:6px 0 6px 18px;position:relative;border-top:1px dashed var(--line)}.why li:first-child{border:0}.why li:before{content:"";position:absolute;left:4px;top:14px;width:5px;height:5px;border-radius:50%;background:var(--acc)}
+.plan{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}.plan div{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}.plan small{display:block;color:var(--mut);font-size:11px}.plan b{font-family:var(--mono);font-size:15px}
+.post{padding:12px 0;border-top:1px solid var(--line)}.post:first-of-type{border:0;padding-top:0}.post .meta{font-size:12px;color:var(--mut);display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:4px}
+.news a{text-decoration:none;font-weight:500}.news a:hover{color:var(--acc)}
+.src{display:flex;flex-direction:column;gap:12px}.src .hd{display:flex;align-items:center;gap:8px}.src .hd b{font-size:15px}
+.fields{display:flex;flex-wrap:wrap;gap:5px}.fields span{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--panel2);color:var(--faint);border:1px solid var(--line);text-decoration:line-through;text-decoration-color:var(--line2)}.fields span.on{color:var(--tx2);border-color:var(--line2);text-decoration:none}
+.verdict{display:flex;gap:14px;align-items:flex-start}.verdict .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}
+.chart{width:100%}.skel{background:linear-gradient(90deg,var(--panel2),var(--line),var(--panel2));background-size:200% 100%;animation:sk 1.4s infinite;border-radius:10px}@keyframes sk{to{background-position:-200% 0}}
+.brief h4{font-size:18px;margin:2px 0 8px;letter-spacing:-.3px}.brief p{margin:6px 0;color:var(--tx2)}
+/* status strip + steps */
+.strip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border-radius:var(--r);border:1px solid var(--line);background:var(--panel);margin-bottom:18px;font-size:13px;box-shadow:var(--shadow)}
+.strip.run{border-color:color-mix(in srgb,var(--warn) 40%,var(--line))}.strip.err{border-color:color-mix(in srgb,var(--dn) 55%,var(--line));background:linear-gradient(0deg,var(--dnbg),var(--dnbg)),var(--panel)}
+.spin{width:15px;height:15px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--warn);animation:spin .9s linear infinite;flex:none}@keyframes spin{to{transform:rotate(360deg)}}
+.pbar{flex:1;min-width:140px;height:5px;border-radius:3px;background:var(--panel2);overflow:hidden}.pbar i{display:block;height:5px;background:linear-gradient(90deg,var(--warn),#ffd27a);transition:width .5s}
+.cnt{display:flex;gap:6px;flex-wrap:wrap;width:100%}.cnt span{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--panel2);color:var(--mut);border:1px solid var(--line)}.cnt b{color:var(--tx);font-weight:600;font-family:var(--mono)}
+.steps{display:grid;gap:0;margin-bottom:14px}.st{display:grid;grid-template-columns:16px 230px 1fr;gap:12px;align-items:center;padding:10px 4px;border-top:1px solid var(--line);font-size:13px}.st:first-child{border:0}
+.st i{width:10px;height:10px;border-radius:50%;background:var(--line2)}.st.running i{background:var(--warn);animation:pulse 1s infinite}.st.done i{background:var(--up)}.st.warn i{background:var(--warn)}.st.error i{background:var(--dn)}
+.st small{color:var(--mut)}.st.pending span{color:var(--faint)}
+.toast{position:fixed;right:20px;bottom:20px;z-index:50;padding:11px 16px;border-radius:12px;background:var(--panel);border:1px solid var(--line2);box-shadow:0 12px 32px rgba(0,0,0,.3);font-size:13px;transform:translateY(20px);opacity:0;transition:all .25s;pointer-events:none;max-width:420px}
+.toast.show{transform:none;opacity:1}.toast.err{border-color:var(--dn);color:var(--dn)}.toast.ok{border-color:var(--up)}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--mut);cursor:pointer;font-size:13px;margin-bottom:14px}.back:hover{color:var(--tx)}
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.price{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:10px}.price b{font-size:40px;font-weight:700;letter-spacing:-1.2px;font-family:var(--mono)}
+.scrim{display:none}
+@media(min-width:1001px){.app:not(.collapsed) #open{display:none}}
+@media(max-width:1180px){.g6{grid-template-columns:repeat(3,minmax(0,1fr))}.rank{grid-template-columns:28px minmax(150px,1.5fr) 96px minmax(100px,1fr) minmax(120px,1fr) 110px 92px}.rank>:nth-child(3){display:none}}
+@media(max-width:1000px){aside{position:fixed;top:0;bottom:0;left:0;box-shadow:0 0 50px rgba(0,0,0,.5)}.app:not(.collapsed) .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20}
+ .g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}.g2,.g-21,.g-12{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:680px){.wrap{padding:16px 16px 80px}.g6,.g4,.g3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}h1{font-size:23px}.price b{font-size:32px}
+ .rank{grid-template-columns:22px minmax(0,1fr) 84px 76px;gap:10px;padding:12px 6px}.rank>:nth-child(3),.rank>:nth-child(5),.rank>:nth-child(6),.rank>:nth-child(7){display:none}.rh{display:none}
+ .plan{grid-template-columns:1fr 1fr}.st{grid-template-columns:16px 1fr}.st small{grid-column:2}.top{padding:10px 12px}.fresh{display:none}.vote{grid-template-columns:80px 1fr 44px}.dec .big{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="scrim" id="scrim"></div>
+  <aside>
+    <div class="brand">
+      <div class="logo"><svg class="i" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M3 17l5-5 4 4 8-9"/><path d="M15 7h5v5"/></svg></div>
+      <div><b>Sentiment Agent</b><small>HKEX · KRX retail signal</small></div><span class="sp"></span>
+      <button class="ib" id="close" aria-label="Collapse sidebar"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
+    </div>
+    <div class="sec">Markets</div><div id="markets"></div>
+    <div class="sec">Watchlist</div><div class="watch" id="watch"></div>
+    <div class="sfoot">
+      <div class="live"><i id="dot"></i><span id="live">connecting</span><span class="sp"></span><span id="stamp" class="faint"></span></div>
+      <div class="row"><button class="btn pri sm" id="refresh" style="flex:1"><svg class="i" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg><span id="rlabel">Refresh data</span></button>
+      <button class="btn sm" id="theme" aria-label="Toggle theme"><svg class="i" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button></div>
+    </div>
+  </aside>
+  <main>
+    <header class="top">
+      <button class="ib" id="open" aria-label="Open sidebar"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <div class="crumb" id="crumb"></div><span class="sp"></span><span class="fresh" id="fresh"></span><span class="badge" id="mode">…</span>
+    </header>
+    <div class="scroll" id="scroll"><div class="wrap"><div id="strip"></div><div id="view" class="view"></div></div></div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<!--DATA-->
+<script>
+/* ================= helpers ================= */
+const $=(s,r=document)=>r.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S={data:null,ex:null,t:null,sort:'mentions',freq:'daily',labfreq:'hourly',running:false,status:null};
+const FILE=location.protocol==='file:';
+const f=(x,d=2)=>x==null||isNaN(x)?'–':Number(x).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const pc=(x,d=2)=>x==null||isNaN(x)?'–':(x>0?'+':'')+f(x,d)+'%',cls=x=>x>0?'up':x<0?'dn':'mut';
+const dc=d=>/Bull|Up|Net long|LONG/.test(d)?'up':/Bear|Down|Net short|SHORT/.test(d)?'dn':'';
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const ago=t=>{const s=(Date.now()-new Date(t))/1e3;return s<90?'just now':s<5400?Math.round(s/60)+' min ago':s<172800?Math.round(s/3600)+' h ago':Math.round(s/86400)+' days ago'};
+const I={chk:'<path d="M5 12l5 5 9-11"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',q:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6M12 17h.01"/>',
+  db:'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',back:'<path d="M15 6l-6 6 6 6"/>',bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'};
+const ic=(k,s=16)=>`<svg class="i" viewBox="0 0 24 24" style="width:${s}px;height:${s}px">${I[k]}</svg>`;
+function toast(msg,kind=''){const t=$('#toast');t.textContent=msg;t.className='toast show '+kind;clearTimeout(t._h);t._h=setTimeout(()=>t.className='toast',3800)}
+function spark(vals,w=96,h=30){
+  if(!vals||vals.length<2)return '';const mn=Math.min(...vals),mx=Math.max(...vals),r=mx-mn||1;
+  const pts=vals.map((v,i)=>[(i/(vals.length-1))*w,h-3-((v-mn)/r)*(h-6)]);const col=vals[vals.length-1]>=vals[0]?css('--up'):css('--dn');
+  const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block"><path d="${d} L${w} ${h} L0 ${h} Z" fill="${col}" opacity=".10"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.6"/></svg>`;
+}
+function gauge(v,lim=.4){
+  const x=Math.max(-1,Math.min(1,v/lim)),a=Math.PI*(1-(x+1)/2),cx=60,cy=58,r=46,px=cx+r*Math.cos(a),py=cy-r*Math.sin(a);
+  return `<svg width="104" height="62" viewBox="0 0 120 68"><defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="${css('--dn')}"/><stop offset=".5" stop-color="${css('--faint')}"/><stop offset="1" stop-color="${css('--up')}"/></linearGradient></defs>
+   <path d="M14 58 A46 46 0 0 1 106 58" fill="none" stroke="url(#gg)" stroke-width="8" stroke-linecap="round" opacity=".9"/><circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="7" fill="${css('--panel')}" stroke="${css('--tx')}" stroke-width="2.5"/></svg>`;
+}
+/* lazy Plotly: the page renders immediately; the chart library loads only when a chart is drawn */
+const PLOTLY_URLS=['https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js','https://unpkg.com/plotly.js-dist-min@2.35.2/plotly.min.js'];
+let PL=null;function plotly(){if(window.Plotly)return Promise.resolve(window.Plotly);if(PL)return PL;
+  const tryUrl=i=>new Promise((ok,no)=>{if(i>=PLOTLY_URLS.length)return no();const s=document.createElement('script');s.src=PLOTLY_URLS[i];s.async=true;
+    s.onload=()=>ok(window.Plotly);s.onerror=()=>{s.remove();tryUrl(i+1).then(ok,no)};document.head.appendChild(s)});
+  PL=tryUrl(0).catch(e=>{PL=null;throw e});return PL}
+const SRC={lihkg:'LIHKG',telegram:'Telegram',telegram_news:'Telegram (news)',telegram_research:'Telegram (research)',naver_finance:'Naver 종목토론실'},sn=s=>SRC[s]||String(s).replace(/_/g,' ');
+const lay=(o={})=>({paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{family:'Inter, sans-serif',color:css('--mut'),size:11},margin:{l:52,r:14,t:8,b:32},hovermode:'x unified',
+  hoverlabel:{bgcolor:css('--panel'),bordercolor:css('--line2'),font:{color:css('--tx')}},legend:{orientation:'h',y:1.12,x:0,font:{size:11}},
+  xaxis:{gridcolor:css('--line'),zeroline:false,rangeslider:{visible:false},linecolor:css('--line')},yaxis:{gridcolor:css('--line'),zeroline:false,linecolor:css('--line')},...o});
+function plot(id,d,l){const el=document.getElementById(id);if(!el)return;el.classList.add('skel');
+  plotly().then(P=>{el.classList.remove('skel');P.react(el,d,l,{displayModeBar:false,responsive:true})}).catch(()=>{el.classList.remove('skel');el.innerHTML='<div class="empty">Charts need an internet connection (Plotly CDN).</div>'})}
+
+/* ================= data + routing ================= */
+async function load(){
+  if(!FILE){try{const r=await fetch('/api/report');if(r.ok)S.data=await r.json()}catch(e){}}
+  if(!S.data&&window.__REPORT__)S.data=window.__REPORT__;
+  if(!S.data){
+    if(FILE){$('#view').innerHTML=`<div class="eyebrow">Setup</div><h1 style="margin-top:6px">No data in this file</h1><div class="sub">This is the dashboard template. It needs the server, or an exported report.</div>
+      <div class="card" style="margin-top:18px"><dl class="kv"><dt>Live dashboard</dt><dd>python -m sentiment_agent serve → http://localhost:8000</dd><dt>Offline report</dt><dd>python -m sentiment_agent export → outputs/report.html</dd></dl></div>`;return}
+    waiting();return setTimeout(load,3000);
+  }
+  route();
+}
+function route(){
+  const p=location.hash.replace(/^#\/?/,'').split('/').filter(Boolean).map(decodeURIComponent);
+  const exs=Object.keys(S.data.exchanges);S.ex=exs.includes(p[0])?p[0]:exs[0];
+  S.t=p[1]&&S.data.exchanges[S.ex].tickers.some(t=>t.ticker===p[1])?p[1]:null;render();
+}
+const go=(ex,t)=>{location.hash='#/'+ex+(t?'/'+encodeURIComponent(t):'')};
+function render(){
+  const d=S.data,ex=d.exchanges[S.ex];
+  const pv=d.provenance||{},cached=pv.apify_cache_hits||0;
+  $('#mode').textContent=d.data_mode==='keyless'?'LIVE · KEYLESS (TELEGRAM + YAHOO/GDELT)':d.data_mode==='prices'?'LIVE PRICES · NO SENTIMENT YET':d.data_mode!=='live'?'DEMO · SYNTHETIC':cached?`LIVE · ${cached}/${pv.apify_retrievals} CACHED`:'LIVE · FRESH';
+  $('#mode').title=d.data_mode!=='live'?'Synthetic posts and prices: nothing here is real market evidence':(pv.label||'')+(pv.oldest_cached_at?' · oldest cache '+new Date(pv.oldest_cached_at).toLocaleString():'');
+  $('#mode').className='badge '+(['live','prices','keyless'].includes(d.data_mode)?'live':'demo');
+  $('#fresh').textContent='Report '+ago(d.generated_at)+' · '+d.sentiment_backend+' labels';
+  $('#stamp').textContent=new Date(d.generated_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  $('#markets').innerHTML=Object.entries(d.exchanges).map(([k,v])=>{const sig=v.tickers.filter(t=>/LONG|SHORT/.test(t.decision.action)).length;
+    return `<a class="nav ${k===S.ex&&!S.t?'on':''}" data-go="${k}"><i class="dot ${v.coverage_complete===false?'dn':'up'}" title="${v.coverage_complete===false?'source coverage incomplete':'all sources delivered'}"></i><span class="nm">${k}</span><span class="m faint">${sig?sig+' signal'+(sig>1?'s':''):v.tickers.length+' assets'}</span></a>`}).join('');
+  $('#watch').innerHTML=ex.tickers.map(t=>`<a class="nav ${t.ticker===S.t?'on':''}" data-go="${S.ex}" data-t="${t.ticker}"><i class="dot ${t.decision.action}" title="${t.decision.action}"></i><span class="nm">${esc(t.name)}</span><span class="m num ${cls(t.change_pct)}">${pc(t.change_pct,1)}</span></a>`).join('');
+  const t=S.t&&ex.tickers.find(x=>x.ticker===S.t);
+  $('#crumb').innerHTML=t?`<a data-go="${S.ex}">${S.ex}</a> <span class="faint">/</span> <b>${esc(t.name)}</b>`:`<b>${S.ex}</b> <span class="faint">· market intelligence</span>`;
+  const v=$('#view');v.classList.remove('view');void v.offsetWidth;v.classList.add('view');
+  t?detail(ex,t):overview(ex);strip();
+}
+
+/* ================= overview ================= */
+function overview(ex){
+  const d=S.data,ts=ex.tickers,tot=ts.reduce((a,t)=>a+t.mentions,0),avg=ts.reduce((a,t)=>a+t.sentiment*t.mentions,0)/Math.max(tot,1);
+  const bu=ts.filter(t=>t.direction==='Bullish').length,be=ts.filter(t=>t.direction==='Bearish').length,ne=ts.length-bu-be;
+  const acts=a=>ts.filter(t=>t.decision.action===a).length,vh=ex.validation.hourly||{},st=ex.source_status||[];
+  const okSrc=st.filter(s=>s.status==='ok'||s.status==='partial').length,drop=st.reduce((a,s)=>a+(s.dropped_irrelevant||0),0);
+  const best=vh.baselines?Math.max(vh.baselines.always_up,vh.baselines.always_down,vh.baselines.momentum):null;
+  $('#view').innerHTML=`
+  <div class="hero"><div><div class="eyebrow">Market overview</div><h1 style="margin-top:6px">${S.ex} retail sentiment</h1>
+    <div class="sub">${ex.sources.map(s=>esc(sn(s))).join(' + ')} · ${d.lookback_days}-day window · prices in ${ex.currency} · ${ex.tz}</div>
+    <div class="faint" style="font-size:12px;margin-top:4px">Prices as of ${new Date(d.generated_at).toLocaleString()} · last live social collection: ${ex.last_live_collection?new Date(ex.last_live_collection).toLocaleString():'<span class="warn">never</span>'}</div></div>
+    <div class="pills">${Object.keys(d.exchanges).map(k=>`<button data-go="${k}" class="${k===S.ex?'on':''}">${k}</button>`).join('')}</div></div>
+
+  ${ex.coverage_complete===false?`<div class="strip err" style="margin-top:18px"><b>Source coverage incomplete</b><span>${[...(ex.coverage_missing||[]).map(s=>sn(s)+' delivered nothing'),...(ex.coverage_partial||[]).map(s=>sn(s)+' covers only some assets')].join(' · ')}</span><span class="faint">decisions are down-weighted ×0.8</span></div>`:''}
+  <div class="g g6" style="margin-top:22px">
+   <div class="card kpi"><div class="l">Posts analysed</div><div class="v">${d.data_mode==='prices'?'<span class="faint">—</span>':tot.toLocaleString()}</div><div class="s">${drop?drop.toLocaleString()+' off-topic dropped':ts.length+' assets · '+st.length+' sources'}</div></div>
+   <div class="card kpi" style="padding-bottom:10px"><div class="l" title="Retail posts only. Telegram news / research channels are counted as professional commentary, not crowd.">Retail crowd mood</div><div class="row" style="gap:2px;align-items:flex-end;margin-top:4px">${gauge(avg)}<div class="v ${cls(avg)}" style="font-size:19px;margin:0 0 4px">${d.data_mode==='prices'?'n/a':f(avg,3)}</div></div></div>
+   <div class="card kpi"><div class="l">Direction split</div><div class="v">${bu}<span class="faint" style="font-size:16px"> / ${be} / ${ne}</span></div>
+     <div class="split"><i style="width:${bu/ts.length*100}%;background:var(--up)"></i><i style="width:${ne/ts.length*100}%;background:var(--faint)"></i><i style="width:${be/ts.length*100}%;background:var(--dn)"></i></div><div class="s" style="margin-top:6px">bullish · bearish · neutral</div></div>
+   <div class="card kpi"><div class="l">${ic('bolt',14)} Agent signals</div><div class="v">${acts('LONG')+acts('SHORT')}</div><div class="s"><span class="up">${acts('LONG')} long</span> · <span class="dn">${acts('SHORT')} short</span> · <span class="warn">${acts('WATCH')} watch</span></div></div>
+   <div class="card kpi"><div class="l">Hourly hit-rate</div><div class="v">${vh.n?f(vh.dir_acc*100,0)+'%':'–'}</div><div class="s">${vh.n?'best baseline '+f(best*100,0)+'% · n='+vh.n:'not enough data'}</div></div>
+   <div class="card kpi"><div class="l">${ic('db',14)} Source coverage</div><div class="v ${okSrc===st.length?'up':'dn'}">${okSrc}/${st.length}</div><div class="s">${okSrc===st.length?'all sources delivered':'incomplete: see below'}</div></div>
+  </div>
+
+  <div class="shead"><div><div class="eyebrow">Asset intelligence</div><h2>Ranked watchlist</h2><p>Sorted by ${({mentions:'social mentions',sentiment:'weighted crowd sentiment',signal:'agent signal strength',pred:'size of predicted move'})[S.sort]}. Click a row for the deep dive.</p></div>
+   <div class="pills" id="sort">${[['mentions','Mentions'],['sentiment','Sentiment'],['signal','Signal'],['pred','Predicted move']].map(([k,l])=>`<button data-k="${k}" class="${S.sort===k?'on':''}">${l}</button>`).join('')}</div></div>
+  <div class="card" style="padding:4px 6px">${ranking(ts)}</div>
+
+  <div class="shead"><div><div class="eyebrow">Social intelligence</div><h2>Source health & what each community thinks</h2><p>"Configured" is not "collected": each source shows whether it really delivered posts, which engagement fields it actually reports (struck-through = not provided), and how many keyword hits were dropped as off-topic.</p></div></div>
+  <div class="g g-12">
+    <div class="g" style="align-content:start"><div class="g g2">${st.map(srcCard).join('')||'<div class="card empty">No source status in this report.</div>'}</div>${availability(st)}</div>
+    <div class="card"><h3>Sentiment map · crowd mood vs predicted move <span class="faint" style="text-transform:none;letter-spacing:0;font-weight:500">bubble = mentions, colour = action</span></h3><div id="cMap" class="chart" style="height:320px"></div></div>
+  </div>
+
+  <div class="shead"><div><div class="eyebrow">AI prediction lab</div><h2>Does sentiment add value beyond price history?</h2><p>Walk-forward, out-of-sample: each bar is predicted using only data available before it closed. Confidence intervals resample whole dates in blocks, so correlated tickers and days are not counted as independent evidence.</p></div>
+   <div class="pills" id="labf">${[['hourly','Hourly'],['daily','Daily']].map(([k,l])=>`<button data-l="${k}" class="${S.labfreq===k?'on':''}">${l}</button>`).join('')}</div></div>
+  <div id="lab">${lab(ex)}</div>
+
+  <div class="shead"><div><div class="eyebrow">Prediction history</div><h2>Forecast ledger</h2><p>Every forecast is written down before its bar closes and graded after. Unlike a backtest, it cannot be tuned after the fact.</p></div></div>
+  ${ledgerBlock(ex.ledger)}
+  ${d.data_mode==='keyless'?'<div class="note">Keyless live run: real prices, real posts read from public Telegram channel pages and real news from Yahoo Finance + GDELT. LIHKG and Naver can only be collected through Apify (their robots.txt forbids bots), and Exa needs a key: those sources show as missing above.</div>':d.data_mode==='prices'?'<div class="note">Live prices, technicals only: no social posts or news were collected (add Apify and Exa keys). Sentiment figures are empty, and every forecast here is price-history only.</div>':d.data_mode!=='live'?'<div class="note">Demo mode: synthetic posts and prices with a planted weak signal. These metrics say nothing about real markets.</div>':''}
+  <div class="fn">Two-stage ridge: technicals on 2 years of bars; social/news features fitted to the technical model's out-of-sample errors inside the sentiment window. The action is a transparent scorecard (model · crowd · news · attention) scaled by the model's own validation record. "Signal strength" is the size of that score, not a probability of being right. Not investment advice.</div>`;
+  mapChart(ex);
+}
+function ranking(ts){
+  const key={mentions:t=>t.mentions,sentiment:t=>t.sentiment,signal:t=>Math.abs(t.decision.score),pred:t=>Math.abs(t.prediction.daily.pred_return)}[S.sort];
+  const rows=[...ts].sort((a,b)=>key(b)-key(a)),mx=Math.max(...rows.map(t=>t.mentions),1);
+  return `<div class="rank rh"><span>#</span><span>Asset</span><span>60d</span><span>Price</span><span>Mentions</span><span>Sentiment</span><span>Forecast n+1</span><span>Action</span></div>`+
+  rows.map((t,i)=>{const p=t.prediction.daily,w=Math.min(50,Math.abs(t.sentiment)/.3*50);return `<div class="rank ri" data-go="${S.ex}" data-t="${t.ticker}">
+   <span class="faint num">${i+1}</span><span class="nm"><b>${esc(t.name)}</b><small>${t.ticker}${t.local_name?' · '+esc(t.local_name):''}</small></span>
+   <span>${spark(t.series.daily.map(r=>r.c))}</span>
+   <span class="num">${f(t.price)}<small class="d ${cls(t.change_pct)}">${pc(t.change_pct)}</small></span>
+   <span><span class="num">${t.mentions.toLocaleString()}</span><div class="mbar" style="margin-top:6px"><i style="width:${t.mentions/mx*100}%"></i></div></span>
+   <span><div class="bar2" style="margin:4px 0 8px"><i style="${t.sentiment>=0?'left:50%':'right:50%'};width:${w}%;background:${t.sentiment>=0?'var(--up)':'var(--dn)'}"></i></div><span class="chip ${dc(t.direction)}">${t.direction} <span class="num">${f(t.sentiment,2)}</span></span></span>
+   <span class="num">${f(p.pred_price)}<small class="d ${cls(p.pred_return)}">${pc(p.pred_return*100)}${t.consensus.alert?` <span class="warn" title="${esc(t.consensus.alert)}">⚠</span>`:''}</small></span>
+   <span><span class="act ${t.decision.action}">${t.decision.action}</span><small class="d faint" style="margin-top:3px">strength ${t.decision.signal_strength??'–'}</small></span></div>`}).join('');
+}
+function srcCard(s){
+  const tone={ok:'up',partial:'warn',empty:'dn',failed:'dn'}[s.status]||'',lab={ok:'Delivered',partial:'Partial',empty:'No posts',failed:'Failed'}[s.status]||s.status;
+  const sent=srcSentiment(s.source),fl=s.fields||{};
+  return `<div class="card src"><div class="hd"><b>${esc(sn(s.source))}</b><span class="chip ${s.audience&&s.audience!=='retail'?'acc':''}" title="${s.audience&&s.audience!=='retail'?'Not counted as crowd sentiment: feeds the news / commentary vote':'Counted as retail crowd sentiment'}">${esc(s.audience||'retail')}</span><span class="sp"></span><span class="chip ${tone}">${lab}</span></div>
+   <div class="row" style="gap:18px;align-items:flex-end;flex-wrap:wrap"><div><div class="num" style="font-size:22px;font-weight:650">${(s.kept_posts||0).toLocaleString()}</div><div class="faint" style="font-size:12px">posts kept</div></div>
+    <div><div class="num ${cls(sent)}" style="font-size:22px;font-weight:650">${sent==null?'–':f(sent,2)}</div><div class="faint" style="font-size:12px">sentiment</div></div>
+    <div><div class="num" style="font-size:22px;font-weight:650">${s.tickers_with_posts}/${s.tickers_total}</div><div class="faint" style="font-size:12px">assets</div></div></div>
+   <dl class="kv" style="font-size:12px"><dt>Actor runs · cache hits</dt><dd>${S.data.data_mode==='prices'?'not collected yet':s.raw_records==null?'demo data':s.executions+' · '+s.cache_hits}</dd><dt>Off-topic dropped</dt><dd>${s.dropped_irrelevant||0}</dd>${s.failures?`<dt class="dn">Failures</dt><dd class="dn">${s.failures}</dd>`:''}</dl>
+   ${s.errors&&s.errors.length?`<div class="note" style="color:var(--dn)">${esc(s.errors[0])}</div>`:''}
+   <div class="fields" title="engagement fields this source actually reports">${['likes','dislikes','reactions','views','replies','reposts','author_followers','channel_subscribers'].map(k=>`<span class="${(fl[k]||0)>.5?'on':''}">${k.replace('_',' ')}</span>`).join('')}</div></div>`;
+}
+function availability(st){
+  const F=[['likes','Likes'],['dislikes','Dislikes'],['views','Views'],['reactions','Reactions'],['reposts','Reposts'],['author_followers','Author followers'],['channel_subscribers','Channel subs']];
+  if(!st.length)return '';
+  return `<div class="card"><h3>Data availability · what each source really provides</h3><div class="xs"><table class="tbl"><tr><th>Field</th>${st.map(s=>`<th>${esc(sn(s.source))}</th>`).join('')}</tr>
+   ${F.map(([k,l])=>`<tr><td class="t">${l}</td>${st.map(s=>{const v=(s.fields||{})[k]||0;return `<td class="${v>.5?'up':'faint'}">${v>.5?'✓ '+f(v*100,0)+'%':'—'}</td>`}).join('')}</tr>`).join('')}</table></div>
+   <div class="faint" style="font-size:12px;margin-top:10px">— = the actor does not return this field; it is stored as missing, never as zero. None of the three actors exposes author follower counts or numeric repost counts, so reach comes from views, likes and Telegram channel subscribers instead. Crowd sentiment uses retail sources only; Telegram news / research channels feed the news vote.</div></div>`;
+}
+function srcSentiment(src){const ts=S.data.exchanges[S.ex].tickers;let w=0,s=0;ts.forEach(t=>{const v=(t.source_sentiment||{})[src];if(v){w+=v.mentions;s+=v.sentiment*v.mentions}});return w?s/w:null}
+function mapChart(ex){
+  const ts=ex.tickers,mx=Math.max(...ts.map(t=>t.mentions),1),col=a=>a==='LONG'?css('--up'):a==='SHORT'?css('--dn'):a==='WATCH'?css('--warn'):css('--faint');
+  plot('cMap',[{type:'scatter',mode:'markers+text',x:ts.map(t=>t.sentiment),y:ts.map(t=>t.prediction.daily.pred_return*100),text:ts.map(t=>t.name.split(' ')[0]),textposition:'top center',
+    textfont:{color:css('--tx2'),size:11},customdata:ts.map(t=>[t.name,t.mentions,t.decision.action]),hovertemplate:'<b>%{customdata[0]}</b><br>sentiment %{x:.3f}<br>forecast %{y:.2f}%<br>%{customdata[1]} posts · %{customdata[2]}<extra></extra>',
+    marker:{size:ts.map(t=>14+30*Math.sqrt(t.mentions/mx)),color:ts.map(t=>col(t.decision.action)),opacity:.78,line:{color:css('--panel'),width:2}}}],
+    lay({hovermode:'closest',showlegend:false,margin:{l:52,r:14,t:20,b:44},xaxis:{title:{text:'weighted crowd sentiment →',font:{size:11}},gridcolor:css('--line'),zeroline:true,zerolinecolor:css('--line2')},yaxis:{title:{text:'forecast next close %',font:{size:11}},gridcolor:css('--line'),zeroline:true,zerolinecolor:css('--line2')}}));
+}
+function lab(ex){
+  const v=ex.validation[S.labfreq];if(!v||!v.n)return '<div class="card empty">Not enough out-of-sample data yet.</div>';
+  const L=v.sentiment_lift||{},ci=L.dir_ci95||[null,null],sig=ci[0]!=null&&ci[0]>0,neg=ci[1]!=null&&ci[1]<0;
+  const vt=sig?['up','chk','Yes: sentiment improved direction calls','The 95% interval for the lift stays above zero.']:neg?['dn','x','No: sentiment made calls worse','The 95% interval for the lift is below zero.']:['warn','q','Not proven yet','The interval includes zero, so the lift could be noise. More data is needed.'];
+  const B=v.baselines||{},bars=[['Full model (tech + sentiment)',v.dir_acc,'--acc'],['Technicals only',v.dir_acc_tech,'--acc2'],['Momentum',B.momentum,'--faint'],['Always up',B.always_up,'--faint'],['Always down',B.always_down,'--faint']];
+  const ciTxt=(a,d=1)=>a&&a[0]!=null?`${f(a[0],d)} … ${f(a[1],d)}`:'–';
+  return `<div class="g g-21"><div class="card"><div class="verdict"><div class="ic" style="background:var(--${vt[0]}bg);color:var(--${vt[0]})">${ic(vt[1],20)}</div>
+     <div><h2 class="${vt[0]}">${vt[2]}</h2><div class="sub" style="margin-top:2px;font-size:13px">${vt[3]} ${S.labfreq} · ${v.n_observations||v.n} ticker-bars over <b>${v.n_timestamps||v.n_dates} independent bars</b> (${v.n_sessions||'?'} sessions) · evidence: <span class="chip ${v.evidence==='adequate'?'up':v.evidence==='limited'?'warn':'dn'}">${v.evidence||'?'}</span> · ${esc(v.ci_method||'')}</div>
+      ${v.synthetic?'<div class="note" style="color:var(--dn)">Synthetic demo data: the post generator deliberately leaks the next hourly return into sentiment, so any lift here is that planted signal, not a finding.</div>':''}</div></div>
+    <div class="g g3" style="margin-top:18px">
+     <div><div class="faint" style="font-size:12px">Direction lift vs technicals</div><div class="num ${cls(L.dir_acc_pts)}" style="font-size:24px;font-weight:650">${L.dir_acc_pts==null?'–':(L.dir_acc_pts>0?'+':'')+f(L.dir_acc_pts,1)+' pts'}</div><div class="faint num" style="font-size:12px">95% CI ${ciTxt(ci)}</div></div>
+     <div><div class="faint" style="font-size:12px">Error change vs technicals</div><div class="num ${cls(-L.mae_pct)}" style="font-size:24px;font-weight:650">${L.mae_pct==null?'–':(L.mae_pct>0?'+':'')+f(L.mae_pct,3)+'%'}</div><div class="faint num" style="font-size:12px">95% CI ${ciTxt(L.mae_ci95,3)}</div></div>
+     <div><div class="faint" style="font-size:12px">Hit-rate (full model)</div><div class="num" style="font-size:24px;font-weight:650">${f(v.dir_acc*100,1)}%</div><div class="faint num" style="font-size:12px">95% CI ${ciTxt(v.dir_acc_ci95&&v.dir_acc_ci95.map(x=>x==null?null:x*100))}</div></div></div>
+    <div style="margin-top:20px">${bars.map(([l,x,c])=>`<div class="vote" style="grid-template-columns:minmax(120px,210px) 1fr 56px"><span>${l}</span><div class="meter"><i style="width:${(x||0)*100}%;background:var(${c})"></i></div><span class="num" style="text-align:right;color:var(--tx)">${f((x||0)*100,1)}%</span></div>`).join('')}</div>
+    ${v.small_sample?`<div class="note">Evidence is ${v.evidence}: judged on independent time bars, not ticker-rows. Treat as exploratory, not proof of edge.</div>`:''}
+    ${leadLag(v.lead_lag)}${pooling(S.data.model_comparison,S.labfreq,S.ex)}</div>
+   <div class="card"><h3>Per asset · ${S.labfreq}</h3><div class="xs"><table class="tbl"><tr><th>Asset</th><th>n</th><th>Hit full</th><th>Hit tech</th><th>MAE full / naive</th></tr>
+    ${(v.per_ticker||[]).map(r=>{const nm=(ex.tickers.find(t=>t.ticker===r.symbol)||{}).name||r.symbol;return `<tr><td class="t">${esc(nm)}</td><td>${r.n}</td><td class="${r.dir_acc>.5?'up':'dn'}">${f(r.dir_acc*100,0)}%</td><td>${f(r.dir_acc_tech*100,0)}%</td><td class="${r.mae_full<r.mae_naive?'up':'dn'}">${f(r.mae_full,2)} / ${f(r.mae_naive,2)}</td></tr>`}).join('')}</table></div>
+    <dl class="kv" style="margin-top:14px;font-size:12px"><dt>MAE % naive · tech · full</dt><dd>${f(v.mae_pct.naive,3)} · ${f(v.mae_pct.tech,3)} · ${f(v.mae_pct.full,3)}</dd><dt>Rank IC</dt><dd>${f(v.ic_spearman,3)}</dd></dl></div></div>`;
+}
+function leadLag(L){if(!L||L.lead_corr==null)return '';
+  return `<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)"><div class="faint" style="font-size:12px;margin-bottom:6px">Does sentiment lead or follow price? (rank correlation, ${L.n} bars with posts)</div>
+   <div class="row" style="gap:18px;flex-wrap:wrap"><span>sentiment → next return <b class="num ${cls(L.lead_corr)}">${f(L.lead_corr,3)}</b></span><span>past return → sentiment <b class="num ${cls(L.follow_corr)}">${f(L.follow_corr,3)}</b></span><span class="chip ${L.label==='sentiment leads price'?'up':L.label==='sentiment follows price'?'warn':''}">${esc(L.label||'')}</span></div></div>`}
+function pooling(C,fq,exn){const c=C&&C[fq]&&C[fq][exn];if(!c||!c.n)return '';const d=c.separate.dir_acc-c.pooled.dir_acc,ci=c.separate_minus_pooled_dir_ci95||[];
+  return `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div class="faint" style="font-size:12px;margin-bottom:6px">One pooled HKEX+KRX model vs a ${esc(exn)}-only model, same ${c.n} predictions</div>
+   <div class="row" style="gap:18px;flex-wrap:wrap"><span>pooled <b class="num">${f(c.pooled.dir_acc*100,1)}%</b></span><span>${esc(exn)}-only <b class="num">${f(c.separate.dir_acc*100,1)}%</b></span><span class="num ${cls(d)}">${d>0?'+':''}${f(d*100,1)} pts</span><span class="faint num" style="font-size:12px">95% CI ${ci[0]==null?'–':f(ci[0]*100,1)+' … '+f(ci[1]*100,1)}</span></div></div>`}
+function ledgerBlock(L){
+  if(!L||!L.daily)return '<div class="card empty">No ledger yet.</div>';const d=L.daily,a=d.actions;
+  const rows=(d.recent||[]).map(r=>{const ok=r.actual==null?null:Math.sign(r.pred_price-r.last_close)===Math.sign(r.actual-r.last_close);
+    return `<tr><td class="t">${esc(r.symbol)}</td><td>${new Date(r.as_of).toLocaleDateString()}</td><td>${f(r.last_close)}</td><td>${f(r.pred_price)}</td><td>${r.actual==null?'<span class="faint">pending</span>':f(r.actual)}</td><td>${r.action?`<span class="act ${r.action}">${r.action}</span>`:''}</td><td>${ok==null?'<span class="faint">·</span>':ok?`<span class="up">${ic('chk',15)}</span>`:`<span class="dn">${ic('x',15)}</span>`}</td></tr>`}).join('');
+  return `<div class="g g4" style="margin-bottom:14px">
+   <div class="card kpi"><div class="l">Forecasts recorded</div><div class="v">${d.recorded}</div><div class="s">${d.pending} waiting for their bar to close</div></div>
+   <div class="card kpi"><div class="l">Live hit-rate</div><div class="v">${d.matured?f(d.hit_rate*100,0)+'%':'–'}</div><div class="s">${d.matured} graded</div></div>
+   <div class="card kpi"><div class="l">Error: model vs naive</div><div class="v">${d.matured?f(d.mae_pct,2)+'%':'–'}</div><div class="s">${d.matured?'naive '+f(d.naive_mae_pct,2)+'% · band hit '+(d.band80_coverage==null?'–':f(d.band80_coverage*100,0)+'%'):'grades appear after the next close'}</div></div>
+   <div class="card kpi"><div class="l">Acted signals</div><div class="v ${a?cls(a.avg_return_pct):''}">${a?pc(a.avg_return_pct,2):'–'}</div><div class="s">${a?a.n+' trades · '+f(a.hit_rate*100,0)+'% win':'none graded yet'}</div></div></div>
+   ${rows?`<div class="card" style="padding:6px 10px"><div class="xs"><table class="tbl"><tr><th>Asset</th><th>As of</th><th>Close</th><th>Forecast</th><th>Actual</th><th>Action</th><th>Hit</th></tr>${rows}</table></div></div>`:''}`;
+}
+
+/* ================= stock deep dive ================= */
+function detail(ex,t){
+  const p=t.prediction.daily,h=t.prediction.hourly,c=t.position.crowd,o=t.position.own,dd=t.decision;
+  const pt=(((ex.validation.daily||{}).per_ticker)||[]).find(r=>r.symbol===t.ticker);
+  $('#view').innerHTML=`<a class="back" data-go="${S.ex}">${ic('back',15)} ${S.ex} overview</a>
+  <div class="hero"><div><div class="eyebrow">Stock deep dive · ${S.ex}</div>
+    <h1 style="margin-top:6px">${esc(t.name)} <span class="faint" style="font-weight:500;font-size:20px">${esc(t.local_name||'')} · ${t.ticker}</span></h1>
+    <div class="price"><b>${f(t.price)}</b><span class="mut">${t.currency}</span>${priceRef(t)}<span class="chip ${cls(t.change_pct)}">${pc(t.change_pct)} today</span><span class="chip ${cls(t.ret_5d_pct)}">${pc(t.ret_5d_pct)} 5 sessions</span><span class="chip ${dc(t.direction)}">crowd ${t.direction.toLowerCase()}</span></div></div>
+    <div style="text-align:right"><span class="act ${dd.action}" style="font-size:14px;padding:8px 16px">${dd.action}</span><div class="faint" style="font-size:12px;margin-top:6px">signal strength ${dd.signal_strength}/100</div></div></div>
+  ${t.consensus.alert?`<div class="strip" style="margin-top:18px;color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line))">⚠ ${esc(t.consensus.alert)}</div>`:''}
+
+  <div class="g g-21" style="margin-top:20px">${decisionCard(t)}${t.ai_brief?briefCard(t.ai_brief):forecastCard(t,p,h)}</div>
+  ${t.ai_brief?`<div class="g g4" style="margin-top:14px">${miniKpis(t,p,h)}</div>`:''}
+
+  <div class="card" style="margin-top:14px"><h3>Price, support / resistance and n+1 forecast</h3><div id="cPrice" class="chart" style="height:380px"></div></div>
+
+  <div class="shead"><div><div class="eyebrow">Social intelligence</div><h2>What the crowd is saying</h2></div></div>
+  <div class="g g-12">
+   <div class="card"><h3>By source</h3><div class="faint" style="font-size:12px;margin:-4px 0 8px">Crowd sentiment ${f(t.sentiment,2)} = ${esc(t.sentiment_scope||'retail posts')}${t.pro_commentary&&t.pro_commentary.count?` · news/research commentary ${f(t.pro_commentary.sentiment,2)} from ${t.pro_commentary.count} Telegram posts (news vote)`:''}</div>${Object.entries(t.source_sentiment||{}).map(([k,v])=>{const w=Math.min(50,Math.abs(v.sentiment)/.3*50);return `<div class="vote" style="grid-template-columns:150px 1fr 96px"><span style="color:var(--tx2)">${esc(sn(k))} <span class="chip ${v.audience&&v.audience!=='retail'?'acc':''}" style="font-size:10px;padding:0 6px">${esc(v.audience||'retail')}</span></span><div class="bar2"><i style="${v.sentiment>=0?'left:50%':'right:50%'};width:${w}%;background:${v.sentiment>=0?'var(--up)':'var(--dn)'}"></i></div><span class="num" style="text-align:right">${f(v.sentiment,2)} <span class="faint">· ${v.mentions}</span></span></div>`}).join('')||'<div class="empty">No posts.</div>'}
+    <h3 style="margin-top:22px">Stated positions</h3>
+    <div class="split" style="height:10px;margin:0 0 10px"><i style="width:${c.long+c.short?c.long/(c.long+c.short)*100:50}%;background:var(--up)"></i><i style="width:${c.long+c.short?c.short/(c.long+c.short)*100:50}%;background:var(--dn)"></i></div>
+    <dl class="kv"><dt>Long · short</dt><dd><span class="up">${c.long}</span> · <span class="dn">${c.short}</span> <span class="chip ${dc(c.bias)}">${c.bias}</span></dd>
+     <dt>Authors</dt><dd>${t.authors||0}</dd><dt>Verified holders</dt><dd>${t.holder_share?f(t.holder_share*100,0)+'%':'–'}</dd><dt>Mention z-score</dt><dd>${f(t.mention_z,1)}</dd>
+     <dt>Own position</dt><dd>${o?`${o.side} ${o.qty} @ ${f(o.avg_cost)} · <span class="${cls(o.pnl_pct)}">${pc(o.pnl_pct)}</span>`:'<span class="faint">none</span>'}</dd></dl></div>
+   <div class="card"><h3>Sentiment by source vs price <span class="faint" style="text-transform:none;letter-spacing:0;font-weight:500">does the crowd lead or follow?</span></h3><div id="cSent" class="chart" style="height:280px"></div>
+    ${Object.keys(t.themes||{}).length?`<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:10px">${Object.entries(t.themes).map(([k,v])=>Object.entries(v).slice(0,3).map(([n,x])=>`<span class="chip">${esc(k)}: ${esc(n)} ${f(x*100,0)}%</span>`).join('')).join('')}</div>`:''}</div></div>
+
+  <div class="g g2" style="margin-top:14px">
+   <div class="card"><h3>Loudest posts <span class="faint" style="text-transform:none;letter-spacing:0;font-weight:500">weighted by reach, endorsement, holder badge</span></h3>${t.top_posts.map(n=>`<div class="post"><div class="meta"><span class="chip">${esc(sn(n.src))}${n.audience&&n.audience!=='retail'?' · '+esc(n.audience):''}</span>${n.likes!=null?`<span>♥ ${n.likes}</span>`:''}${n.dislikes?`<span>✗ ${n.dislikes}</span>`:''}${n.reactions!=null?`<span>☺ ${n.reactions}</span>`:''}${n.views!=null?`<span>👁 ${n.views.toLocaleString()}</span>`:''}${n.holder?'<span class="chip up">verified holder</span>':''}<span class="sp"></span><span class="num ${cls(n.score)}">${f(n.score,2)}</span></div><div>${esc(n.text)}</div><div class="faint" style="font-size:11px;margin-top:3px">${new Date(n.ts).toLocaleString()}</div></div>`).join('')||'<div class="empty">No posts.</div>'}</div>
+   <div class="card news"><h3>News intelligence · Exa <span class="chip ${dc(t.news.direction)}" style="text-transform:none;letter-spacing:0">${t.news.direction} ${f(t.news.sentiment,2)}</span></h3>${t.news.items.map(n=>`<div class="post"><div class="meta"><span>${new Date(n.ts).toLocaleDateString()}</span><span class="sp"></span><span class="chip ${n.score>.05?'up':n.score<-.05?'dn':''}">${f(n.score,2)}</span></div><a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a></div>`).join('')||'<div class="empty">No news in the window.</div>'}</div></div>
+
+  <div class="shead"><div><div class="eyebrow">AI prediction lab</div><h2>Predicted vs realised (out-of-sample)</h2>${pt?`<p>Daily on this asset: hit-rate <b class="${pt.dir_acc>.5?'up':'dn'}">${f(pt.dir_acc*100,0)}%</b> vs technicals-only ${f(pt.dir_acc_tech*100,0)}% over ${pt.n} sessions (tiny sample).</p>`:''}</div>
+   <div class="pills" id="fseg">${[['daily','Daily'],['hourly','Hourly']].map(([k,l])=>`<button data-f="${k}" class="${S.freq===k?'on':''}">${l}</button>`).join('')}</div></div>
+  <div class="card"><div id="cBack" class="chart" style="height:300px"></div><h3 style="margin-top:14px">Absolute error per prediction · model vs naive</h3><div id="cErr" class="chart" style="height:170px"></div></div>
+  <div class="fn">${esc(t.local_name||'')} · forecasts are model outputs, not advice. Levels: clustered swing pivots + classic pivot point.</div>`;
+  charts(t);
+}
+function priceRef(t){const r=t.price_ref;if(!r)return '';
+  return `<span class="chip" title="The forecast is computed from the last COMPLETED session close, never from a still-forming bar.">${r.market_bar_forming?'live print':'last print'} ${new Date(r.market_ts).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} · model base ${f(r.model_close)} @ ${new Date(r.model_close_ts).toLocaleDateString()}${r.model_close_derived_from_hourly?' (rebuilt from hourly)':''}</span>`}
+function miniKpis(t,p,h){return `<div class="card kpi"><div class="l">Next close</div><div class="v">${f(p.pred_price)}</div><div class="s"><span class="${cls(p.pred_return)}">${pc(p.pred_return*100)}</span> · 80% band ${f(p.band80[0],1)}–${f(p.band80[1],1)}</div></div>
+  <div class="card kpi"><div class="l">Next hourly bar</div><div class="v">${f(h.pred_price)}</div><div class="s ${cls(h.pred_return)}">${pc(h.pred_return*100)}</div></div>
+  <div class="card kpi"><div class="l">Signal agreement</div><div class="v">${t.consensus.agree}/3</div><div class="s">model · crowd · news</div></div>
+  <div class="card kpi"><div class="l">Mentions</div><div class="v">${t.mentions.toLocaleString()}</div><div class="s">${Object.entries(t.by_source).map(([k,v])=>sn(k)+' '+v).join(' · ')}</div></div>`}
+function forecastCard(t,p,h){return `<div class="card"><h3>n+1 forecast</h3><div class="g g2">
+  <div class="kpi"><div class="l">Next close</div><div class="v">${f(p.pred_price)}</div><div class="s"><span class="${cls(p.pred_return)}">${pc(p.pred_return*100)}</span></div></div>
+  <div class="kpi"><div class="l">Next hourly bar</div><div class="v">${f(h.pred_price)}</div><div class="s ${cls(h.pred_return)}">${pc(h.pred_return*100)}</div></div></div>
+  <dl class="kv" style="margin-top:16px"><dt>80% band</dt><dd>${f(p.band80[0])} – ${f(p.band80[1])}</dd><dt>Technicals-only forecast</dt><dd class="${cls(p.pred_return_tech_only)}">${pc(p.pred_return_tech_only*100)}</dd>
+  <dt>Signal / noise</dt><dd>${f(p.signal_to_noise,2)}</dd><dt>Agreement</dt><dd>${t.consensus.agree}/3</dd><dt>Mentions</dt><dd>${t.mentions.toLocaleString()} · z ${f(t.mention_z,1)}</dd></dl>
+  <div class="faint" style="font-size:12px;margin-top:12px">Set ANTHROPIC_API_KEY to add an AI analyst brief here.</div></div>`}
+function decisionCard(t){
+  const d=t.decision,pl=d.plan,col=d.action==='LONG'?'--up':d.action==='SHORT'?'--dn':d.action==='WATCH'?'--warn':'--faint';
+  const vote=(k,l)=>{const v=d.votes[k],w=Math.min(50,Math.abs(v)*50);return `<div class="vote"><span>${l} <span class="faint">×${d.weights[k]}</span></span><div class="bar2"><i style="${v>=0?'left:50%':'right:50%'};width:${w}%;background:${v>=0?'var(--up)':'var(--dn)'}"></i></div><span class="num" style="text-align:right">${f(v,2)}</span></div>`};
+  return `<div class="card dec"><h3>${ic('bolt',14)} Agent decision · next session</h3>
+   <div class="row" style="gap:16px;flex-wrap:wrap;align-items:center"><span class="big" style="color:var(${col})">${d.action}</span>
+    <div style="flex:1;min-width:180px"><div class="row" style="justify-content:space-between;font-size:12px;color:var(--mut)"><span>signal strength (not a probability)</span><span class="num">${d.signal_strength}/100 · trust ×${d.trust}</span></div><div class="meter" style="margin-top:6px"><i style="width:${d.signal_strength}%;background:var(${col})"></i></div></div></div>
+   ${d.reliability?`<div class="faint" style="font-size:12px;margin-top:10px">Sentiment value: <b class="${d.reliability.sentiment_value==='proven'?'up':'warn'}">${esc(d.reliability.sentiment_value)}</b> · evidence ${esc(d.reliability.evidence)} · sentiment votes ×${d.reliability.social_scale}</div>`:''}
+   ${pl?`<div class="plan"><div><small>Entry</small><b>${f(pl.entry)}</b></div><div><small>Stop</small><b class="dn">${f(pl.stop)}</b></div><div><small>Target</small><b class="up">${f(pl.target)}</b></div><div><small>Reward : risk</small><b>${pl.reward_risk==null?'–':f(pl.reward_risk,2)}</b></div></div>`:'<div class="faint" style="margin-top:14px">No trade plan: evidence too weak or conflicting.</div>'}
+   <div class="g g2" style="margin-top:16px;gap:20px"><div>${vote('model','Model')}${vote('crowd','Crowd')}${vote('news','News')}${vote('attention','Attention')}</div>
+   <ul class="why" style="margin:0">${d.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div></div>`;
+}
+function briefCard(b){return `<div class="card brief"><h3>AI analyst brief <span class="chip ${b.agrees_with_action?'up':'warn'}" style="text-transform:none;letter-spacing:0">${b.agrees_with_action?'agrees with action':'challenges action'}</span></h3>
+  <h4>${esc(b.headline)}</h4><p>${esc(b.thesis)}</p><div class="g g2" style="margin:12px 0"><div><div class="eyebrow" style="color:var(--up)">Bull case</div><p>${esc(b.bull_case)}</p></div><div><div class="eyebrow" style="color:var(--dn)">Bear case</div><p>${esc(b.bear_case)}</p></div></div>
+  <div class="faint" style="font-size:12px">Would change my mind: ${esc(b.what_would_change_my_mind)} · ${esc(b.model||'')}</div></div>`}
+function charts(t){
+  const d=t.series.daily,p=t.prediction.daily,x=d.map(r=>r.t),nx=new Date(new Date(x[x.length-1]).getTime()+864e5).toISOString(),up=css('--up'),dn=css('--dn');
+  const lines=[...t.levels.support.map(l=>[up,l.level,'S']),...t.levels.resistance.map(l=>[dn,l.level,'R'])];
+  const sh=lines.map(([c,y])=>({type:'line',xref:'paper',x0:0,x1:1,y0:y,y1:y,line:{color:c,width:1,dash:'dot'}}));
+  const an=lines.map(([c,y,k])=>({xref:'paper',x:0,y,xanchor:'left',yanchor:'bottom',text:k+' '+f(y),showarrow:false,font:{size:10,color:c}}));
+  plot('cPrice',[{type:'candlestick',x,open:d.map(r=>r.o),high:d.map(r=>r.h),low:d.map(r=>r.l),close:d.map(r=>r.c),name:'Price',increasing:{line:{color:up},fillcolor:up},decreasing:{line:{color:dn},fillcolor:dn}},
+    {type:'scatter',mode:'markers',x:[nx],y:[p.pred_price],name:'n+1 forecast (80% band)',marker:{size:12,color:css('--acc'),symbol:'diamond',line:{color:css('--panel'),width:2}},error_y:{type:'data',symmetric:false,array:[p.band80[1]-p.pred_price],arrayminus:[p.pred_price-p.band80[0]],color:css('--acc'),thickness:1.5,width:6}}],lay({shapes:sh,annotations:an}));
+  const s=t.series.sentiment,bs=t.series.by_source||[],pal=[css('--acc'),css('--warn'),css('--up')];
+  const srcs=[...new Set(bs.map(r=>r.src))];
+  const traces=[{type:'bar',x:s.map(r=>r.t),y:s.map(r=>r.n),name:'Mentions',marker:{color:css('--accbg')},yaxis:'y3',hovertemplate:'%{y} posts<extra></extra>'},
+    {type:'scatter',mode:'lines',x:s.map(r=>r.t),y:s.map(r=>r.close),name:'Close',line:{color:css('--faint'),width:2,dash:'dot'},yaxis:'y2'},
+    ...srcs.map((k,i)=>{const r=bs.filter(x=>x.src===k);return {type:'scatter',mode:'lines+markers',x:r.map(x=>x.t),y:r.map(x=>x.sent),name:sn(k),line:{color:pal[i%3],width:2,shape:'spline'},marker:{size:6},customdata:r.map(x=>x.n),hovertemplate:sn(k)+' %{y:.2f} (%{customdata} posts)<extra></extra>'}})];
+  if(!srcs.length)traces.push({type:'scatter',mode:'lines+markers',x:s.map(r=>r.t),y:s.map(r=>r.sent),name:'Sentiment',line:{color:css('--tx'),width:2}});
+  plot('cSent',traces,lay({margin:{l:46,r:54,t:24,b:30},yaxis:{title:{text:'sentiment',font:{size:10}},gridcolor:css('--line'),zeroline:true,zerolinecolor:css('--line2')},
+    yaxis2:{overlaying:'y',side:'right',showgrid:false,title:{text:'close',font:{size:10}}},yaxis3:{overlaying:'y',visible:false,rangemode:'tozero'}}));
+  back(t);
+}
+function back(t){
+  const b=t.prediction[S.freq].backtest,x=b.map(r=>r.t);
+  plot('cBack',[{x,y:b.map(r=>r.actual),name:'Actual',line:{color:css('--tx'),width:2}},{x,y:b.map(r=>r.pred),name:'Model',line:{color:css('--acc'),width:2}},{x,y:b.map(r=>r.naive),name:'Naive (no change)',line:{color:css('--faint'),dash:'dot'}}],lay());
+  const e=r=>Math.abs(r.pred-r.actual)/r.actual*100,en=r=>Math.abs(r.naive-r.actual)/r.actual*100;
+  plot('cErr',[{type:'bar',x,y:b.map(e),name:'Model |error| %',marker:{color:css('--acc')}},{type:'bar',x,y:b.map(en),name:'Naive |error| %',marker:{color:css('--line2')}}],
+    lay({barmode:'group',margin:{l:46,r:14,t:6,b:28},legend:{orientation:'h',y:1.25,x:0,font:{size:11}}}));
+}
+
+/* ================= pipeline status, refresh, retry ================= */
+const isRunning=s=>!!s&&(s.running||(s.state==='running'&&!s.finished_at&&Date.now()-new Date(s.started_at)<36e5));
+const errOf=s=>s&&(s.last_error||(s.state==='error'?s.error:null));
+function counters(c){if(!c)return '';const sp=(l,v,x='')=>`<span>${l} <b>${v}</b>${x}</span>`;
+  return `<div class="cnt">${sp('assets',`${c.assets||0}/${c.assets_total||0}`)}${c.jobs_total?sp('collection jobs',`${c.jobs_done||0}/${c.jobs_total}`):''}
+  ${c.executions_started?sp('actor runs',`${c.executions_done||0}/${c.executions_started}`,c.expansions?` · ${c.expansions} reply hops`:''):''}${c.cache_hits?sp('cache hits',c.cache_hits):''}
+  ${c.actor_failures?`<span class="dn">failures <b class="dn">${c.actor_failures}</b></span>`:''}${c.raw_records?sp('raw records',c.raw_records.toLocaleString()):''}${sp('posts kept',(c.posts||0).toLocaleString())}
+  ${sp('Exa',`${c.exa_ok||0} ok`,c.exa_errors?` · <b class="dn">${c.exa_errors} failed</b>`:'')}${sp('news',c.news||0)}</div>`}
+function steps(s){return `<div class="steps">${s.steps.map(x=>`<div class="st ${x.status}"><i></i><span>${esc(x.label)}</span><small>${esc(x.detail||'')}${x.seconds!=null&&x.status!=='running'?' · '+x.seconds+'s':''}</small></div>`).join('')}</div>`}
+function strip(){
+  const s=S.status,el=$('#strip');if(!s||!S.data){el.innerHTML='';return}
+  const err=errOf(s);
+  if(isRunning(s)&&s.steps){const k=s.steps.filter(x=>x.status==='done'||x.status==='warn').length,cur=Math.min(k+1,s.steps.length);
+    el.innerHTML=`<div class="strip run"><span class="spin"></span><b>Step ${cur} of ${s.steps.length}</b><span>${esc(s.message)}</span><span class="faint">${esc(s.mode||'')} run · showing last report meanwhile</span><div class="pbar" title="steps completed (coarse, not time-based)"><i style="width:${k/s.steps.length*100}%"></i></div>${counters(s.counters)}</div>`}
+  else if(err)el.innerHTML=`<div class="strip err"><b>Last refresh failed</b><span>${esc(err)}</span><span class="faint">showing last good report</span><span class="sp"></span><button class="btn sm retry">Retry</button></div>`;
+  else el.innerHTML='';
+}
+function waiting(){
+  const s=S.status,err=errOf(s);
+  $('#crumb').innerHTML='<b>Building report</b>';
+  $('#view').innerHTML=`<div class="eyebrow">${err?'Pipeline error':'Pipeline running'}</div><h1 style="margin-top:6px">${err?'The first run failed':'Building the first report'}</h1>
+   <div class="sub">${s?esc(err||s.message):'Connecting to the pipeline…'}${s&&s.mode?` · ${esc(s.mode)} mode`:''}</div>
+   ${s&&s.steps?`<div class="card" style="margin-top:18px">${steps(s)}${counters(s.counters)}</div>`:'<div class="card skel" style="height:220px;margin-top:18px"></div>'}
+   ${err?'<div class="row" style="margin-top:16px;flex-wrap:wrap"><button class="btn pri retry">Retry run</button><span class="faint" style="font-size:12px">The step marked red names what failed. Check .env keys and config.yaml.</span></div>':''}`;
+}
+function adminKey(){try{return localStorage.getItem('adminKey')||''}catch(e){return ''}}
+async function refresh(btn){
+  if(FILE){toast('Offline report: start the server to refresh.');return}
+  const label=btn&&btn.innerHTML;if(btn){btn.disabled=true;btn.textContent='Starting…'}
+  try{
+    let r=await fetch('/api/refresh',{method:'POST',headers:{'X-Admin-Key':adminKey()}});
+    if(r.status===401){const k=prompt('This server requires an admin key to refresh:');if(k){try{localStorage.setItem('adminKey',k)}catch(e){}r=await fetch('/api/refresh',{method:'POST',headers:{'X-Admin-Key':k}})}}
+    const j=await r.json().catch(()=>({}));
+    if(r.ok)toast('Refresh started. Progress appears at the top.','ok');
+    else if(r.status===409)toast('A run is already in progress.');
+    else toast('Refresh rejected: '+(j.detail||j.reason||r.status),'err');
+  }catch(e){toast('Server unreachable: '+e.message,'err')}
+  finally{if(btn){btn.disabled=false;btn.innerHTML=label}}
+}
+
+/* ================= interactions ================= */
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]'),k=e.target.closest('#sort button'),q=e.target.closest('#fseg button'),l=e.target.closest('#labf button'),r=e.target.closest('.retry');
+  if(r){refresh(r);return}
+  if(g){go(g.dataset.go,g.dataset.t);if(innerWidth<=1000)side(true);$('#scroll').scrollTop=0}
+  if(k){S.sort=k.dataset.k;render()}
+  if(l){S.labfreq=l.dataset.l;document.querySelectorAll('#labf button').forEach(b=>b.classList.toggle('on',b===l));$('#lab').innerHTML=lab(S.data.exchanges[S.ex])}
+  if(q){S.freq=q.dataset.f;document.querySelectorAll('#fseg button').forEach(b=>b.classList.toggle('on',b===q));back(S.data.exchanges[S.ex].tickers.find(t=>t.ticker===S.t))}
+});
+const side=v=>{$('#app').classList.toggle('collapsed',v);try{localStorage.setItem('side',v?'0':'1')}catch(e){}};
+$('#close').onclick=()=>side(true);$('#open').onclick=()=>side(!$('#app').classList.contains('collapsed'));$('#scrim').onclick=()=>side(true);
+$('#refresh').onclick=e=>refresh(e.currentTarget);
+function theme(m){document.documentElement.dataset.theme=m;try{localStorage.setItem('theme',m)}catch(e){}if(S.data)render()}
+$('#theme').onclick=()=>theme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+let saved=null,sv=null;try{saved=localStorage.getItem('theme');sv=localStorage.getItem('side')}catch(e){}
+theme(saved||'dark');
+if(innerWidth<=1000||sv==='0')$('#app').classList.add('collapsed');
+function live(){
+  if(!window.EventSource||FILE){$('#live').textContent='Offline report';$('#dot').className='';return}
+  const es=new EventSource('/api/stream');
+  const on=(e,reload)=>{const s=JSON.parse(e.data),r=isRunning(s),er=errOf(s);S.status=s;S.running=r;
+    $('#dot').className=r?'busy':er?'err':'on';$('#live').textContent=r?'Refreshing…':er?'Last run failed':'Live';$('#rlabel').textContent=r?'Running…':'Refresh data';
+    if(reload)load();else if(!S.data)waiting();strip()};
+  es.addEventListener('update',e=>on(e,true));es.addEventListener('status',e=>on(e,false));
+  es.onerror=()=>{$('#dot').className='';$('#live').textContent='Reconnecting…'};
+}
+addEventListener('hashchange',()=>S.data&&route());load();live();
+setInterval(()=>{if(S.data)$('#fresh').textContent='Report '+ago(S.data.generated_at)+' · '+S.data.sentiment_backend+' labels'},60000);
+</script>
+</body>
+</html>

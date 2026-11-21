@@ -1,0 +1,252 @@
+{
+ "at": "2026-11-21T16:39:58.051255+00:00",
+ "report_generated_at": "2026-11-21T16:39:03+00:00",
+ "data_mode": "live",
+ "verdict": "NOT READY",
+ "checks": [
+  {
+   "id": "R0",
+   "requirement": "Data is live, not synthetic",
+   "status": "PASS",
+   "evidence": "live (15/15 retrievals from cache)"
+  },
+  {
+   "id": "R0b",
+   "requirement": "Evidence files belong to this exact report",
+   "status": "PASS",
+   "evidence": "evidence/meta.json 2026-11-21T16:39:03+00:00 vs latest.json 2026-11-21T16:39:03+00:00"
+  },
+  {
+   "id": "R1",
+   "requirement": "HKEX: 2 different SOCIAL (retail) platforms from the brief's list",
+   "status": "FAIL",
+   "evidence": "retail platforms configured: lihkg + telegram; delivered posts: lihkg"
+  },
+  {
+   "id": "R1",
+   "requirement": "KRX: 2 different SOCIAL (retail) platforms from the brief's list",
+   "status": "PASS",
+   "evidence": "retail platforms configured: naver + telegram; delivered posts: naver, telegram"
+  },
+  {
+   "id": "R2",
+   "requirement": "Scraped with Apify (actor IDs + run IDs)",
+   "status": "PASS",
+   "evidence": "actors: claude_code_reviewer/lihkg-scraper-en, datascoutlab/telegram-channels-scraper, hgservices/naver-stock-discussion-scraper; recorded runs: 15"
+  },
+  {
+   "id": "R3",
+   "requirement": "HKEX: 5 different assets",
+   "status": "PASS",
+   "evidence": "0700.HK, 0005.HK, 9988.HK, 1299.HK, 3690.HK"
+  },
+  {
+   "id": "R3",
+   "requirement": "KRX: 5 different assets",
+   "status": "PASS",
+   "evidence": "005930.KS, 000660.KS, 373220.KS, 035420.KS, 035720.KS"
+  },
+  {
+   "id": "R4",
+   "requirement": "Ticker, cashtag and keyword searches",
+   "status": "PASS",
+   "evidence": "HKEX: 5/5 tickers have cashtags, LIHKG keyword search=True; KRX: Naver boards are per stock code (no cashtag culture), Telegram routed by ticker/code/name keywords"
+  },
+  {
+   "id": "R5",
+   "requirement": "Last 10 days",
+   "status": "PASS",
+   "evidence": "lookback_days=10"
+  },
+  {
+   "id": "R5b",
+   "requirement": "All kept posts fall inside the 10-day window",
+   "status": "PASS",
+   "evidence": "586 posts from 2026-11-11 21:03 to 2026-11-21 16:33 UTC"
+  },
+  {
+   "id": "R6",
+   "requirement": "Post timestamps in UTC",
+   "status": "PASS",
+   "evidence": "100% parsed, tz=UTC"
+  },
+  {
+   "id": "R7",
+   "requirement": "Post text extracted",
+   "status": "PASS",
+   "evidence": "median 92 chars"
+  },
+  {
+   "id": "R8",
+   "requirement": "Engagement field 'likes'",
+   "status": "WARN",
+   "evidence": "provided by: lihkg, naver_finance; not provided by: telegram - missing values stay NaN, never 0"
+  },
+  {
+   "id": "R8",
+   "requirement": "Engagement field 'reposts'",
+   "status": "WARN",
+   "evidence": "provided by: no source; not provided by: lihkg, naver_finance, telegram (none of the three actors returns a numeric repost/forward count) - missing values stay NaN, never 0"
+  },
+  {
+   "id": "R8",
+   "requirement": "Engagement field 'views'",
+   "status": "WARN",
+   "evidence": "provided by: naver_finance, telegram; not provided by: lihkg - missing values stay NaN, never 0"
+  },
+  {
+   "id": "R9",
+   "requirement": "Author follower counts",
+   "status": "WARN",
+   "evidence": "author followers reported on 0% of posts (none of the 3 actors expose it); Telegram channel subscribers on 21% kept separately as reach"
+  },
+  {
+   "id": "R10",
+   "requirement": "Posts aligned to price bars without look-ahead",
+   "status": "PASS",
+   "evidence": "245/586 posts mapped to the first daily close at/after them (rest are after the last close); every bar close >= post time: True; median wait 4.6h"
+  },
+  {
+   "id": "R11",
+   "requirement": "Recent relevant news from Exa",
+   "status": "PASS",
+   "evidence": "116 articles for 10/10 tickers; Exa calls recorded: 10"
+  },
+  {
+   "id": "R12",
+   "requirement": "Per ticker: ticker, name, price, sentiment, direction, position, S/R",
+   "status": "PASS",
+   "evidence": "all 10 tickers complete; supports below and resistances above price"
+  },
+  {
+   "id": "R12b",
+   "requirement": "Creativity",
+   "status": "PASS",
+   "evidence": "decision + trade plan, AI prediction lab, forecast ledger, source health, sentiment map, lead/lag, pooled vs per-exchange"
+  },
+  {
+   "id": "R13",
+   "requirement": "Visual report per exchange, sorted by mentions / sentiment, with direction",
+   "status": "PASS",
+   "evidence": "outputs/report.html 253 KB, exchange tabs + sort by mentions/sentiment/signal/predicted move, direction chips"
+  },
+  {
+   "id": "R14",
+   "requirement": "n+1 price predicted for every ticker",
+   "status": "PASS",
+   "evidence": "daily (next close) + hourly (next bar), from completed bars only"
+  },
+  {
+   "id": "R15",
+   "requirement": "HKEX: results checked out of sample",
+   "status": "PASS",
+   "evidence": "walk-forward daily n=30 (exploratory), hourly n=240 (exploratory); baselines ['always_up', 'always_down', 'momentum']; CI: moving-block bootstrap over dates (block=2)"
+  },
+  {
+   "id": "R16",
+   "requirement": "HKEX: forecasts graded after the fact (ledger)",
+   "status": "WARN",
+   "evidence": "5 recorded, 0 graded -> rerun after the next close to grade them"
+  },
+  {
+   "id": "R15",
+   "requirement": "KRX: results checked out of sample",
+   "status": "PASS",
+   "evidence": "walk-forward daily n=30 (exploratory), hourly n=200 (exploratory); baselines ['always_up', 'always_down', 'momentum']; CI: moving-block bootstrap over dates (block=2)"
+  },
+  {
+   "id": "R16",
+   "requirement": "KRX: forecasts graded after the fact (ledger)",
+   "status": "WARN",
+   "evidence": "5 recorded, 0 graded -> rerun after the next close to grade them"
+  },
+  {
+   "id": "R17",
+   "requirement": "daily: every target is strictly after its features",
+   "status": "PASS",
+   "evidence": "0 violations in 4,755 rows"
+  },
+  {
+   "id": "R18",
+   "requirement": "daily: placebo test (sentiment shuffled in time)",
+   "status": "PASS",
+   "evidence": "real lift 10.0 pts vs shuffled mean 6.23 (19 shuffles), p=0.3 -> real lift not distinguishable from shuffled sentiment",
+   "placebo": {
+    "real_lift_pts": 10.0,
+    "placebo_lifts_pts": [
+     3.33,
+     6.67,
+     3.33,
+     11.67,
+     13.33,
+     5.0,
+     1.67,
+     11.67,
+     10.0,
+     6.67,
+     1.67,
+     11.67,
+     3.33,
+     5.0,
+     5.0,
+     3.33,
+     8.33,
+     8.33,
+     -1.67
+    ],
+    "placebo_mean_pts": 6.23,
+    "p_value": 0.3
+   }
+  },
+  {
+   "id": "R17",
+   "requirement": "hourly: every target is strictly after its features",
+   "status": "PASS",
+   "evidence": "0 violations in 3,755 rows"
+  },
+  {
+   "id": "R18",
+   "requirement": "hourly: placebo test (sentiment shuffled in time)",
+   "status": "PASS",
+   "evidence": "real lift -3.18 pts vs shuffled mean -3.8 (19 shuffles), p=0.55 -> real lift not distinguishable from shuffled sentiment",
+   "placebo": {
+    "real_lift_pts": -3.18,
+    "placebo_lifts_pts": [
+     -2.05,
+     -7.27,
+     -2.27,
+     -4.09,
+     -3.64,
+     -0.68,
+     -3.18,
+     -5.45,
+     -3.18,
+     -3.18,
+     -7.27,
+     -2.05,
+     -4.09,
+     -4.77,
+     -2.73,
+     -3.18,
+     -4.55,
+     -5.68,
+     -2.95
+    ],
+    "placebo_mean_pts": -3.8,
+    "p_value": 0.55
+   }
+  },
+  {
+   "id": "R19",
+   "requirement": "Reproducible: actor IDs, pinned deps, docs",
+   "status": "PASS",
+   "evidence": "requirements.lock, README actor table, manifest with run/dataset IDs"
+  },
+  {
+   "id": "R20",
+   "requirement": "Automated test-suite",
+   "status": "PASS",
+   "evidence": "44 passed in 13.47s"
+  }
+ ]
+}
