@@ -1,0 +1,31 @@
+[
+ {
+  "type": "channelInfo",
+  "title": "HK Stocks Daily",
+  "username": "hkstocksdaily",
+  "subscribers": 18500,
+  "url": "https://t.me/hkstocksdaily"
+ },
+ {
+  "type": "message",
+  "channel": "hkstocksdaily",
+  "messageId": 991,
+  "url": "https://t.me/hkstocksdaily/991",
+  "date": "2026-11-19T02:14:32+00:00",
+  "text": "騰訊 0700 業績勝預期，$700 今日高開",
+  "views": 5400,
+  "author": null,
+  "isForwarded": false,
+  "isReply": false,
+  "hashtags": [],
+  "mentions": []
+ },
+ {
+  "type": "message",
+  "channel": "hkstocksdaily",
+  "messageId": 992,
+  "date": "2026-11-19T03:00:00+00:00",
+  "text": "恒指今日窄幅上落",
+  "views": 3100
+ }
+]

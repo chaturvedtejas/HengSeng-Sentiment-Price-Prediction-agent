@@ -1,0 +1,116 @@
+lookback_days: 10
+# FREE-TIER PROFILE (default): one full live run ~= $3 of Apify's $5/month free credit. `python -m sentiment_agent doctor` prints the estimate.
+# Full-depth values are noted next to each cap as `full:`.
+refresh_minutes: 1440        # dashboard auto-refresh once a day (each live refresh spends credit); full: 240
+cache_ttl_minutes: 1435
+
+sentiment:
+  backend: lexicon           # lexicon (free, offline) | xlmr (free, local model: pip install -e ".[nlp]") | claude (paid API, best on slang/sarcasm)
+  bullish_threshold: 0.15    # per-post bull/bear flag
+  direction_threshold: 0.05  # aggregate ticker direction (weighted mean score)
+  min_relevance: 0.3         # posts Claude judges off-topic (keyword collisions, spam) are dropped
+
+llm:                         # used only when ANTHROPIC_API_KEY is set; otherwise the pipeline silently uses the lexicon
+  model: claude-opus-5-5
+  effort: low                # per-post labelling is a classification task
+  batch: 40                  # posts per request (structured JSON output)
+  briefs: true               # AI analyst brief per ticker
+  brief_effort: medium
+
+model:
+  min_social_rows: 15
+  alpha_tech: 10.0
+  alpha_social: 30.0
+
+decision:
+  enter: 0.30                # |composite score x trust| needed for LONG / SHORT
+
+# Own positions (optional) -> shown with live P&L on the dashboard
+positions: []
+#  - {symbol: "0700.HK", side: long, qty: 200, avg_cost: 360.0}
+
+# ---------------------------------------------------------------------------------------------
+# Sources: HKEX = LIHKG + Telegram, KRX = Naver 종목토론실 + Telegram   (brief: 2 sources per exchange)
+# Input field names below were checked against each actor's README (Nov 2026).
+# ---------------------------------------------------------------------------------------------
+exchanges:
+  HKEX:
+    tz: Asia/Hong_Kong
+    session_close: "16:00"
+    currency: HKD
+    tickers:
+      - {symbol: "0700.HK", name: "Tencent Holdings", local_name: "騰訊控股", keywords: ["騰訊", "Tencent", "0700", "$700", "$0700", "鵝廠", "腾讯"]}
+      - {symbol: "0005.HK", name: "HSBC Holdings", local_name: "滙豐控股", keywords: ["滙豐", "匯豐", "HSBC", "0005", "$5", "$0005", "汇丰"]}
+      - {symbol: "9988.HK", name: "Alibaba Group", local_name: "阿里巴巴", keywords: ["阿里巴巴", "阿里", "Alibaba", "9988", "$9988", "BABA", "$BABA"]}
+      - {symbol: "1299.HK", name: "AIA Group", local_name: "友邦保險", keywords: ["友邦", "AIA", "1299", "$1299"]}
+      - {symbol: "3690.HK", name: "Meituan", local_name: "美團", keywords: ["美團", "Meituan", "3690", "$3690", "美团"]}
+    sources:
+      - name: lihkg
+        enabled: true
+        audience: retail
+        actor_id: claude_code_reviewer/lihkg-scraper-en
+        scoped: false                      # thread titles are re-checked against ticker keywords
+        tz: Asia/Hong_Kong
+        # hop 1: site-wide search, maxItems is PER keyword
+        input: {mode: search, keywords: "{keywords_top}", maxItems: 8, dateFrom: "{lookback}", order: desc_reply_time}   # full: "{keywords}", 30
+        # hop 2: the replies inside the hottest threads are where the actual debate happens
+        expand:
+          top_threads: 2               # full: 3
+          input: {mode: thread, threadIds: "{thread_ids}", maxReplies: 15}   # full: 100
+      - name: telegram
+        enabled: true
+        actor_id: datascoutlab/telegram-channels-scraper
+        per_exchange: true                 # ONE run for the whole exchange, messages routed to tickers by keyword
+        audience: retail
+        tz: UTC
+        # 智能講股 (~2.3K subscribers, ~34 posts/day). Keyless run 2026-11-20: every post naming our tickers was an automated
+        # turnover table, so all were rejected by the automated-post filter -> no HK retail opinions from this channel.
+        # Replace it with a genuine public HK retail channel if you find one. HK retail CHAT happens mostly in private
+        # Telegram groups, which cannot be scraped; public retail channels are few and small.
+        channels: ["StockIntelligence"]
+        input: {channels: "{channels}", maxMessagesPerChannel: 350, postedAfter: "{since_date}", includeChannelInfo: true}
+      - name: telegram_news
+        enabled: false                     # optional: ~3,000 posts/day news firehose (a 400 cap covers ~3 hours); Exa already covers news
+        actor_id: datascoutlab/telegram-channels-scraper
+        per_exchange: true
+        audience: news
+        tz: UTC
+        channels: ["StockIntelligenceNews"]
+        input: {channels: "{channels}", maxMessagesPerChannel: 400, postedAfter: "{since_date}", includeChannelInfo: true}
+
+  KRX:
+    tz: Asia/Seoul
+    session_close: "15:30"
+    currency: KRW
+    tickers:
+      - {symbol: "005930.KS", name: "Samsung Electronics", local_name: "삼성전자", keywords: ["삼성전자", "Samsung Electronics", "005930", "삼전"]}
+      - {symbol: "000660.KS", name: "SK hynix", local_name: "SK하이닉스", keywords: ["SK하이닉스", "하이닉스", "SK hynix", "000660", "하닉"]}
+      - {symbol: "373220.KS", name: "LG Energy Solution", local_name: "LG에너지솔루션", keywords: ["LG에너지솔루션", "LG Energy", "373220", "엔솔"]}
+      - {symbol: "035420.KS", name: "NAVER", local_name: "네이버", keywords: ["NAVER", "035420", "네이버 주가", "네이버 주식"]}
+      - {symbol: "035720.KS", name: "Kakao", local_name: "카카오", keywords: ["카카오", "Kakao", "035720"]}
+    sources:
+      - name: naver_finance
+        enabled: true
+        audience: retail
+        actor_id: hgservices/naver-stock-discussion-scraper
+        scoped: true                       # one board per stock code -> no keyword filter needed
+        tz: Asia/Seoul
+        input: {stocks: ["{code}"], dateFrom: "{since_local_date}", maxResults: 80}    # full: 1500 (newest first; busy boards are truncated and the report flags it)
+      - name: telegram
+        enabled: true
+        actor_id: datascoutlab/telegram-channels-scraper
+        per_exchange: true
+        audience: retail
+        tz: UTC
+        # Public channels run by INDIVIDUAL Korean investors (not brokers), checked 2026-11-21: active, mention our tickers.
+        # 루팡 bornlupin ~18/day · 서화백 easobi ~10/day · 습관이 부자를 만든다 habit4117 ~60/day · 시황맨 shmstory ~5/day · 제이슨 bumgore ~9/day
+        channels: ["bornlupin", "easobi", "habit4117", "shmstory", "bumgore"]
+        input: {channels: "{channels}", maxMessagesPerChannel: 150, postedAfter: "{since_date}", includeChannelInfo: true}   # full: 600
+      - name: telegram_research
+        enabled: false                     # optional (costs credit): broker research, reported apart from retail
+        actor_id: datascoutlab/telegram-channels-scraper
+        per_exchange: true
+        audience: research
+        tz: UTC
+        channels: ["HanaResearch", "yuantaresearch", "meritz_research", "eqmirae", "daishinstrategy"]
+        input: {channels: "{channels}", maxMessagesPerChannel: 100, postedAfter: "{since_date}", includeChannelInfo: true}

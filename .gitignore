@@ -1,0 +1,14 @@
+*.egg-info/
+*.pyc
+*.tmp
+*.zip
+.env
+.pytest_cache/
+.venv/
+__pycache__/
+data/cache/
+outputs/*.tmp
+outputs/doctor.json
+outputs/forecast_ledger_*.jsonl
+outputs/forecast_ledger_mock.jsonl
+outputs/status.json

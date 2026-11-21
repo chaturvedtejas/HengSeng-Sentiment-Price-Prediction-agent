@@ -1,0 +1,38 @@
+[
+ {
+  "type": "post",
+  "stockCode": "005930",
+  "stockName": "삼성전자",
+  "market": "KOSPI",
+  "postId": "412233",
+  "url": "https://finance.naver.com/item/board_read.naver?code=005930&nid=412233",
+  "title": "삼전 가즈아",
+  "text": "외국인 순매수 들어온다 풀매수",
+  "writtenAt": "2026-11-19T10:21:00+09:00",
+  "author": "개미1234",
+  "authorProfileId": "x1",
+  "isHolderVerified": true,
+  "views": 231,
+  "likes": 14,
+  "dislikes": 3,
+  "imageCount": 0,
+  "postType": "normal",
+  "isCleanbotPassed": true,
+  "scrapedAt": "2026-11-20T06:38:58.411Z"
+ },
+ {
+  "type": "post",
+  "stockCode": "005930",
+  "postId": "412234",
+  "title": "",
+  "text": "",
+  "writtenAt": "2026-11-19T10:22:00+09:00",
+  "postType": "itemNewsPrice"
+ },
+ {
+  "type": "notice",
+  "code": "no_results",
+  "message": "no posts",
+  "input": "999999"
+ }
+]

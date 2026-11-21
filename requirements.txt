@@ -1,0 +1,18 @@
+pandas>=1.5
+numpy
+scikit-learn
+scipy
+pyyaml
+python-dotenv
+python-dateutil
+tzdata
+apify-client
+exa-py
+yfinance
+fastapi
+uvicorn[standard]
+# Claude labelling + analyst briefs (sentiment.backend: claude):
+anthropic>=1.0
+# optional multilingual transformer scorer (SENTIMENT_BACKEND=xlmr):
+# transformers
+# torch

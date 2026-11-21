@@ -1,0 +1,17 @@
+[project]
+name = "sentiment-agent"
+version = "2.0.0"
+description = "Social + news sentiment pipeline predicting n+1 prices for HKEX and KRX equities"
+requires-python = ">=3.10"
+dependencies = ["pandas>=1.5","numpy","scikit-learn","scipy","pyyaml","python-dotenv","python-dateutil","tzdata","apify-client","exa-py","yfinance","fastapi","uvicorn[standard]"]
+[project.optional-dependencies]
+llm = ["anthropic>=1.0"]
+nlp = ["transformers","torch"]
+dev = ["pytest","httpx"]
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools.packages.find]
+where = ["src"]
+[tool.pytest.ini_options]
+pythonpath = ["src"]
